@@ -1,11 +1,11 @@
 package domain
 
-type LogPassJson struct {
+type LogPassJSON struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }
 
-type AccessRefreshJson struct {
+type AccessRefreshJSON struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }

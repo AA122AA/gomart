@@ -65,7 +65,7 @@ func (as *UserService) Register(ctx context.Context, login, password string) err
 	return nil
 }
 
-func (as *UserService) Login(ctx context.Context, login, password string) (*domain.AccessRefreshJson, error) {
+func (as *UserService) Login(ctx context.Context, login, password string) (*domain.AccessRefreshJSON, error) {
 	hPass, err := as.repo.GetPasswordHash(ctx, login)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (as *UserService) Logout(ctx context.Context, accessToken string) error {
 	return nil
 }
 
-func (as *UserService) Refresh(ctx context.Context, token string) (*domain.AccessRefreshJson, error) {
+func (as *UserService) Refresh(ctx context.Context, token string) (*domain.AccessRefreshJSON, error) {
 	user, err := as.verifyRefreshToken(ctx, token)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (as *UserService) VerifyAccessToken(ctx context.Context, rawToken string) e
 
 	return err
 }
-func (as *UserService) createTokens(ctx context.Context, login string) (*domain.AccessRefreshJson, error) {
+func (as *UserService) createTokens(ctx context.Context, login string) (*domain.AccessRefreshJSON, error) {
 	accessToken, err := as.createAccessToken(login)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (as *UserService) createTokens(ctx context.Context, login string) (*domain.
 		return nil, err
 	}
 
-	return &domain.AccessRefreshJson{
+	return &domain.AccessRefreshJSON{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, err

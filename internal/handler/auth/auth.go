@@ -15,9 +15,9 @@ import (
 
 type UserService interface {
 	Register(ctx context.Context, login, password string) error
-	Login(ctx context.Context, login, password string) (*domain.AccessRefreshJson, error)
+	Login(ctx context.Context, login, password string) (*domain.AccessRefreshJSON, error)
 	Logout(ctx context.Context, token string) error
-	Refresh(ctx context.Context, token string) (*domain.AccessRefreshJson, error)
+	Refresh(ctx context.Context, token string) (*domain.AccessRefreshJSON, error)
 }
 
 type authHandler struct {
@@ -34,7 +34,7 @@ func NewAuthHandler(ctx context.Context, auth UserService) *authHandler {
 
 func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	user := domain.LogPassJson{}
+	user := domain.LogPassJSON{}
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, "Что-то пошло не так", http.StatusInternalServerError)
@@ -70,7 +70,7 @@ func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	user := domain.LogPassJson{}
+	user := domain.LogPassJSON{}
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, "Что-то пошло не так", http.StatusInternalServerError)
