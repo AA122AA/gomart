@@ -81,6 +81,9 @@ func (as *UserService) Login(ctx context.Context, login, password string) (*doma
 
 func (as *UserService) Logout(ctx context.Context, accessToken string) error {
 	userName, err := as.verifyToken(accessToken)
+	if err != nil {
+		return fmt.Errorf("cannot verify access token: %w", err)
+	}
 
 	err = as.repo.InvalidedRefreshToken(ctx, userName)
 	if err != nil {
