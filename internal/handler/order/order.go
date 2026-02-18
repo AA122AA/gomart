@@ -126,7 +126,7 @@ func getToken(authHeader string) (string, error) {
 	const bearerPrefix = "Bearer "
 	// if authHeader == "" || !strings.HasPrefix(authHeader, bearerPrefix) {
 	if authHeader == "" {
-		return "", fmt.Errorf("Missing access token")
+		return "", fmt.Errorf("missing access token")
 	}
 	rawToken := strings.TrimPrefix(authHeader, bearerPrefix)
 
