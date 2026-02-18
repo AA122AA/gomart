@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// --- User Repository --- \\
 type UserRepo struct {
 	db      *db.DB
 	queries *query.Queries
@@ -87,4 +88,47 @@ func (ur *UserRepo) InvalidedRefreshToken(ctx context.Context, username string) 
 	}
 
 	return ur.queries.UpdateRefreshTokenIsValid(ctx, params)
+}
+
+// --- Order Repository --- \\
+type OrderRepo struct {
+	db      *db.DB
+	queries *query.Queries
+	lg      *zap.Logger
+}
+
+func NewOrderRepo(ctx context.Context, queries *query.Queries, db *db.DB) *OrderRepo {
+	return &OrderRepo{
+		db:      db,
+		queries: queries,
+		lg:      zctx.From(ctx).Named("user repo"),
+	}
+}
+
+func (or *OrderRepo) Create(ctx context.Context, OID int, username, status string) error {
+	now := pgtype.Timestamptz{
+		Time:  time.Now(),
+		Valid: true,
+	}
+	params := query.CreateOrderParams{
+		Oid:        int64(OID),
+		Username:   username,
+		Status:     status,
+		UploadedAt: now,
+		UpdatedAt:  now,
+	}
+
+	return or.queries.CreateOrder(ctx, params)
+}
+
+func (or *OrderRepo) Get(ctx context.Context, oid int) (query.GetOrderByOIDRow, error) {
+	return or.queries.GetOrderByOID(ctx, int64(oid))
+}
+
+func (or *OrderRepo) GetAll(ctx context.Context) ([]query.GetAllRow, error) {
+	return or.queries.GetAll(ctx)
+}
+
+func (or *OrderRepo) GetByUser(ctx context.Context, username string) ([]query.GetOrdersByUserNameRow, error) {
+	return or.queries.GetOrdersByUserName(ctx, username)
 }

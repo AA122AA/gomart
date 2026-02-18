@@ -11,6 +11,145 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createOrder = `-- name: CreateOrder :exec
+INSERT INTO orders (oid, user_id, status, uploaded_at, updated_at)
+VALUES (
+    $1,
+    (SELECT id FROM users WHERE username = $2 LIMIT 1),
+    $3,
+    $4,
+    $5
+)
+`
+
+type CreateOrderParams struct {
+	Oid        int64
+	Username   string
+	Status     string
+	UploadedAt pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) error {
+	_, err := q.db.Exec(ctx, createOrder,
+		arg.Oid,
+		arg.Username,
+		arg.Status,
+		arg.UploadedAt,
+		arg.UpdatedAt,
+	)
+	return err
+}
+
+const getAll = `-- name: GetAll :many
+SELECT users.username, orders.oid, orders.status, orders.accrual, orders.uploaded_at
+FROM orders
+JOIN users ON orders.user_id = users.id
+`
+
+type GetAllRow struct {
+	Username   string
+	Oid        int64
+	Status     string
+	Accrual    pgtype.Int4
+	UploadedAt pgtype.Timestamptz
+}
+
+// ORDERS --
+func (q *Queries) GetAll(ctx context.Context) ([]GetAllRow, error) {
+	rows, err := q.db.Query(ctx, getAll)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllRow
+	for rows.Next() {
+		var i GetAllRow
+		if err := rows.Scan(
+			&i.Username,
+			&i.Oid,
+			&i.Status,
+			&i.Accrual,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOrderByOID = `-- name: GetOrderByOID :one
+SELECT users.username, orders.oid, orders.status, orders.accrual, orders.uploaded_at
+FROM orders
+JOIN users ON orders.user_id = users.id
+WHERE orders.oid = $1
+LIMIT 1
+`
+
+type GetOrderByOIDRow struct {
+	Username   string
+	Oid        int64
+	Status     string
+	Accrual    pgtype.Int4
+	UploadedAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetOrderByOID(ctx context.Context, oid int64) (GetOrderByOIDRow, error) {
+	row := q.db.QueryRow(ctx, getOrderByOID, oid)
+	var i GetOrderByOIDRow
+	err := row.Scan(
+		&i.Username,
+		&i.Oid,
+		&i.Status,
+		&i.Accrual,
+		&i.UploadedAt,
+	)
+	return i, err
+}
+
+const getOrdersByUserName = `-- name: GetOrdersByUserName :many
+SELECT OID, status, accrual, uploaded_at
+FROM orders
+JOIN users ON users.id = orders.user_id
+WHERE users.username = $1
+`
+
+type GetOrdersByUserNameRow struct {
+	Oid        int64
+	Status     string
+	Accrual    pgtype.Int4
+	UploadedAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetOrdersByUserName(ctx context.Context, username string) ([]GetOrdersByUserNameRow, error) {
+	rows, err := q.db.Query(ctx, getOrdersByUserName, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetOrdersByUserNameRow
+	for rows.Next() {
+		var i GetOrdersByUserNameRow
+		if err := rows.Scan(
+			&i.Oid,
+			&i.Status,
+			&i.Accrual,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRefreshTokenByUserName = `-- name: GetRefreshTokenByUserName :one
 SELECT user_tokens.token_id, user_tokens.is_valid
 FROM user_tokens

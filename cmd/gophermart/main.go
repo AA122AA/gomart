@@ -16,6 +16,7 @@ import (
 	"github.com/AA122AA/gomart.git/internal/repoistory"
 	"github.com/AA122AA/gomart.git/internal/server"
 	authservice "github.com/AA122AA/gomart.git/internal/service/auth"
+	orderservice "github.com/AA122AA/gomart.git/internal/service/order"
 	"github.com/AA122AA/gomart.git/internal/zapcfg"
 	"github.com/go-faster/sdk/zctx"
 	"go.uber.org/zap"
@@ -61,15 +62,17 @@ func main() {
 	// Init repo
 	queries := query.New(database.DB())
 	authRepo := repoistory.NewUserRepo(ctx, queries, database)
+	orderRepo := repoistory.NewOrderRepo(ctx, queries, database)
 
 	var wg sync.WaitGroup
 
 	// Init services
 	authService := authservice.NewUserService(ctx, authRepo, cfg)
+	orderService := orderservice.NewOrderService(ctx, orderRepo)
 
 	// Init handlers
 	authHandler := authhandler.NewAuthHandler(ctx, authService)
-	orderHandler := order.NewOrderHandler(ctx)
+	orderHandler := order.NewOrderHandler(ctx, authService, orderService)
 	balanceHandler := balance.NewBalanceHandler(ctx)
 
 	// Init router
