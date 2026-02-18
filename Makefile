@@ -54,10 +54,11 @@ refresh:
 	curl -v -X POST -H 'Authorization: Bearer ${TOKEN}' -d '{"refresh_token":"${RTOKEN}"}' http://localhost:${SERVER_PORT}/api/user/refresh
 
 create-order:
-	curl -v -X POST http://localhost:${SERVER_PORT}/api/user/orders
+	# curl -v -X POST -H 'Authorization: Bearer ${TOKEN}' -d '9278923470' http://localhost:${SERVER_PORT}/api/user/orders
+	curl -v -X POST -H 'Authorization: Bearer ${TOKEN}' -d '12345678903' http://localhost:${SERVER_PORT}/api/user/orders
 
 get-order:
-	curl -v -X GET http://localhost:${SERVER_PORT}/api/user/orders
+	curl -v -X GET -H 'Authorization: Bearer ${TOKEN}' http://localhost:${SERVER_PORT}/api/user/orders | jq "."
 
 get-balance:
 	curl -v -X GET http://localhost:${SERVER_PORT}/api/user/balance
@@ -102,3 +103,19 @@ pg-up:
 
 pg-down:
 	docker compose -f ./dockers/docker-compose.yaml down
+
+####################################################################################################
+
+## >>> Autotests <<<
+autotests: build
+	./gophermarttest \
+	    -test.v -test.run=^TestGophermart$ \
+		-gophermart-binary-path=cmd/gophermart/gomart \
+        -gophermart-host=localhost \
+        -gophermart-port=8084 \
+        -gophermart-database-uri=${DSN} \
+        -accrual-binary-path=cmd/accrual/accrual_darwin_arm64 \
+        -accrual-host=localhost \
+        -accrual-port=8085 \
+        -accrual-database-uri=${DSN}
+        # -accrual-database-uri="postgresql://postgres:postgres@postgres/praktikum?sslmode=disable"

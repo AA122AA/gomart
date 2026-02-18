@@ -102,6 +102,10 @@ func (as *UserService) Refresh(ctx context.Context, token string) (*domain.Acces
 	return as.createTokens(ctx, user)
 }
 
+func (as *UserService) GetUserByToken(ctx context.Context, rawToken string) (string, error) {
+	return as.verifyToken(rawToken)
+}
+
 func (as *UserService) VerifyAccessToken(ctx context.Context, rawToken string) error {
 	_, err := as.verifyToken(rawToken)
 

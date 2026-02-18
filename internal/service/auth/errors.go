@@ -24,11 +24,6 @@ func (eu *ErrUserExists) Is(target error) bool {
 	return ok
 }
 
-// func (eu *ErrUserExists) As(target error) bool {
-// 	_, ok := target.(*ErrUserExists)
-// 	return ok
-// }
-
 func NewErrUserExists(err error) *ErrUserExists {
 	if err == nil {
 		err = fmt.Errorf("user exists")
