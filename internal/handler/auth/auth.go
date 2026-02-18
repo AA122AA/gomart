@@ -47,7 +47,7 @@ func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		var uerr *authservice.ErrUserExists
 		if errors.Is(err, uerr) {
 			ah.lg.Error("user already exists", zap.String("user", user.Login), zap.Error(err))
-			http.Error(w, "User already exists", http.StatusBadRequest)
+			http.Error(w, "User already exists", http.StatusConflict)
 			return
 		}
 		ah.lg.Error("cannot register user", zap.String("user", user.Login), zap.Error(err))
@@ -97,7 +97,8 @@ func (ah *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 
 	const bearerPrefix = "Bearer "
-	if authHeader == "" || !strings.HasPrefix(authHeader, bearerPrefix) {
+	// if authHeader == "" || !strings.HasPrefix(authHeader, bearerPrefix) {
+	if authHeader == "" {
 		http.Error(w, "Missing access token", http.StatusUnauthorized)
 		return
 	}
@@ -119,6 +120,7 @@ func (ah *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		RefreshToken string `json:"refresh_token"`
 	}
 
+	defer r.Body.Close()
 	var req request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.RefreshToken == "" {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)

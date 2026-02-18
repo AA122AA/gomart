@@ -26,7 +26,7 @@ type BonusTransaction struct {
 type Order struct {
 	ID         int32
 	UserID     int32
-	Oid        int32
+	Oid        int64
 	Status     string
 	Accrual    pgtype.Int4
 	UploadedAt pgtype.Timestamptz

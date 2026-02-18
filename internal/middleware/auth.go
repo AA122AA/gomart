@@ -17,7 +17,8 @@ func WithAuth(authService AuthService) Middleware {
 			authHeader := r.Header.Get("Authorization")
 
 			const bearerPrefix = "Bearer "
-			if authHeader == "" || !strings.HasPrefix(authHeader, bearerPrefix) {
+			// if authHeader == "" || !strings.HasPrefix(authHeader, bearerPrefix) {
+			if authHeader == "" {
 				http.Error(w, "Missing access token", http.StatusUnauthorized)
 				return
 			}

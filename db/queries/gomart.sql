@@ -39,3 +39,32 @@ WHERE user_id = (SELECT id FROM users WHERE username = $3 LIMIT 1);
 -- name: UpdateRefreshTokenIsValid :exec
 UPDATE user_tokens SET is_valid = $1
 WHERE user_id = (SELECT id FROM users WHERE username = $2 LIMIT 1);
+
+-- ORDERS --
+-- name: GetAll :many
+SELECT users.username, orders.oid, orders.status, orders.accrual, orders.uploaded_at
+FROM orders
+JOIN users ON orders.user_id = users.id;
+
+-- name: GetOrdersByUserName :many
+SELECT OID, status, accrual, uploaded_at
+FROM orders
+JOIN users ON users.id = orders.user_id
+WHERE users.username = $1;
+
+-- name: GetOrderByOID :one
+SELECT users.username, orders.oid, orders.status, orders.accrual, orders.uploaded_at
+FROM orders
+JOIN users ON orders.user_id = users.id
+WHERE orders.oid = $1
+LIMIT 1;
+
+-- name: CreateOrder :exec
+INSERT INTO orders (oid, user_id, status, uploaded_at, updated_at)
+VALUES (
+    $1,
+    (SELECT id FROM users WHERE username = $2 LIMIT 1),
+    $3,
+    $4,
+    $5
+);
