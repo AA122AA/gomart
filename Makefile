@@ -107,7 +107,11 @@ pg-down:
 ####################################################################################################
 
 ## >>> Autotests <<<
-autotests: build
+
+static-test:
+	go vet -vettool=./statictest ./...
+
+autotests: build static-test
 	./gophermarttest \
 	    -test.v -test.run=^TestGophermart$ \
 		-gophermart-binary-path=cmd/gophermart/gomart \
