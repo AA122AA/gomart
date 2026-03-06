@@ -11,11 +11,13 @@ import (
 	"github.com/AA122AA/gomart.git/internal/db"
 	"github.com/AA122AA/gomart.git/internal/db/query"
 	authhandler "github.com/AA122AA/gomart.git/internal/handler/auth"
-	"github.com/AA122AA/gomart.git/internal/handler/balance"
+	balancehandler "github.com/AA122AA/gomart.git/internal/handler/balance"
 	"github.com/AA122AA/gomart.git/internal/handler/order"
 	"github.com/AA122AA/gomart.git/internal/repoistory"
 	"github.com/AA122AA/gomart.git/internal/server"
+	"github.com/AA122AA/gomart.git/internal/service/accrual"
 	authservice "github.com/AA122AA/gomart.git/internal/service/auth"
+	balanceservice "github.com/AA122AA/gomart.git/internal/service/balance"
 	orderservice "github.com/AA122AA/gomart.git/internal/service/order"
 	"github.com/AA122AA/gomart.git/internal/zapcfg"
 	"github.com/go-faster/sdk/zctx"
@@ -63,17 +65,21 @@ func main() {
 	queries := query.New(database.DB())
 	authRepo := repoistory.NewUserRepo(ctx, queries, database)
 	orderRepo := repoistory.NewOrderRepo(ctx, queries, database)
+	balanceRepo := repoistory.NewBalanceRepo(ctx, queries, database)
+	accrualRepo := repoistory.NewAccrualRepo(ctx, queries, database)
 
 	var wg sync.WaitGroup
 
 	// Init services
 	authService := authservice.NewUserService(ctx, authRepo, cfg)
 	orderService := orderservice.NewOrderService(ctx, orderRepo)
+	balanceService := balanceservice.NewBalanceService(ctx, balanceRepo)
+	accrualService := accrual.NewAccrualClient(ctx, accrualRepo, cfg)
 
 	// Init handlers
 	authHandler := authhandler.NewAuthHandler(ctx, authService)
 	orderHandler := order.NewOrderHandler(ctx, authService, orderService)
-	balanceHandler := balance.NewBalanceHandler(ctx)
+	balanceHandler := balancehandler.NewBalanceHandler(ctx, authService, balanceService)
 
 	// Init router
 	router := server.NewRouter(ctx, authHandler, orderHandler, balanceHandler, authService)
@@ -83,6 +89,8 @@ func main() {
 
 	wg.Add(1)
 	go srv.OnShutDown(ctx, &wg)
+
+	accrualService.Run(ctx, &wg)
 
 	srv.Run()
 

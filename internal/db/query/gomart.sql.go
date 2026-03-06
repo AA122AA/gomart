@@ -11,6 +11,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createBonusAccount = `-- name: CreateBonusAccount :exec
+INSERT INTO bonus_accounts (user_id, current_balance, total_bonuses_spent)
+VALUES (
+    (SELECT id FROM users WHERE username = $1 LIMIT 1),
+    $2,
+    $3
+)
+`
+
+type CreateBonusAccountParams struct {
+	Username          string
+	CurrentBalance    float32
+	TotalBonusesSpent float32
+}
+
+// Bonus Accounts --
+func (q *Queries) CreateBonusAccount(ctx context.Context, arg CreateBonusAccountParams) error {
+	_, err := q.db.Exec(ctx, createBonusAccount, arg.Username, arg.CurrentBalance, arg.TotalBonusesSpent)
+	return err
+}
+
 const createOrder = `-- name: CreateOrder :exec
 INSERT INTO orders (oid, user_id, status, uploaded_at, updated_at)
 VALUES (
@@ -51,7 +72,7 @@ type GetAllRow struct {
 	Username   string
 	Oid        int64
 	Status     string
-	Accrual    pgtype.Int4
+	Accrual    pgtype.Float4
 	UploadedAt pgtype.Timestamptz
 }
 
@@ -82,6 +103,124 @@ func (q *Queries) GetAll(ctx context.Context) ([]GetAllRow, error) {
 	return items, nil
 }
 
+const getAllOrdersForAccrual = `-- name: GetAllOrdersForAccrual :many
+
+SELECT users.username, orders.oid, orders.status, orders.accrual, orders.uploaded_at
+FROM orders
+JOIN users ON orders.user_id = users.id
+WHERE orders.status NOT IN ('PROCESSED', 'INVALID')
+`
+
+type GetAllOrdersForAccrualRow struct {
+	Username   string
+	Oid        int64
+	Status     string
+	Accrual    pgtype.Float4
+	UploadedAt pgtype.Timestamptz
+}
+
+// Accrual --
+func (q *Queries) GetAllOrdersForAccrual(ctx context.Context) ([]GetAllOrdersForAccrualRow, error) {
+	rows, err := q.db.Query(ctx, getAllOrdersForAccrual)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllOrdersForAccrualRow
+	for rows.Next() {
+		var i GetAllOrdersForAccrualRow
+		if err := rows.Scan(
+			&i.Username,
+			&i.Oid,
+			&i.Status,
+			&i.Accrual,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getBalanceByOrderID = `-- name: GetBalanceByOrderID :one
+SELECT u.username, ba.current_balance, ba.total_bonuses_spent
+FROM bonus_accounts ba
+JOIN orders o ON o.user_id = ba.user_id
+JOIN users u ON o.user_id = u.id
+WHERE o.oid = $1
+`
+
+type GetBalanceByOrderIDRow struct {
+	Username          string
+	CurrentBalance    float32
+	TotalBonusesSpent float32
+}
+
+func (q *Queries) GetBalanceByOrderID(ctx context.Context, oid int64) (GetBalanceByOrderIDRow, error) {
+	row := q.db.QueryRow(ctx, getBalanceByOrderID, oid)
+	var i GetBalanceByOrderIDRow
+	err := row.Scan(&i.Username, &i.CurrentBalance, &i.TotalBonusesSpent)
+	return i, err
+}
+
+const getBalanceByUserName = `-- name: GetBalanceByUserName :one
+SELECT current_balance, total_bonuses_spent
+FROM bonus_accounts
+JOIN users ON users.id = bonus_accounts.user_id
+WHERE users.username = $1
+`
+
+type GetBalanceByUserNameRow struct {
+	CurrentBalance    float32
+	TotalBonusesSpent float32
+}
+
+func (q *Queries) GetBalanceByUserName(ctx context.Context, username string) (GetBalanceByUserNameRow, error) {
+	row := q.db.QueryRow(ctx, getBalanceByUserName, username)
+	var i GetBalanceByUserNameRow
+	err := row.Scan(&i.CurrentBalance, &i.TotalBonusesSpent)
+	return i, err
+}
+
+const getBonusTransactionsByUserName = `-- name: GetBonusTransactionsByUserName :many
+SELECT oid, bonuses_withdraw, processed_at
+FROM bonus_transactions bt
+JOIN bonus_accounts ba ON bt.bonus_id = ba.id
+JOIN users u ON ba.user_id = u.id
+WHERE u.username = $1
+ORDER BY bt.processed_at DESC
+`
+
+type GetBonusTransactionsByUserNameRow struct {
+	Oid             int64
+	BonusesWithdraw float32
+	ProcessedAt     pgtype.Timestamptz
+}
+
+func (q *Queries) GetBonusTransactionsByUserName(ctx context.Context, username string) ([]GetBonusTransactionsByUserNameRow, error) {
+	rows, err := q.db.Query(ctx, getBonusTransactionsByUserName, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetBonusTransactionsByUserNameRow
+	for rows.Next() {
+		var i GetBonusTransactionsByUserNameRow
+		if err := rows.Scan(&i.Oid, &i.BonusesWithdraw, &i.ProcessedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getOrderByOID = `-- name: GetOrderByOID :one
 SELECT users.username, orders.oid, orders.status, orders.accrual, orders.uploaded_at
 FROM orders
@@ -94,7 +233,7 @@ type GetOrderByOIDRow struct {
 	Username   string
 	Oid        int64
 	Status     string
-	Accrual    pgtype.Int4
+	Accrual    pgtype.Float4
 	UploadedAt pgtype.Timestamptz
 }
 
@@ -121,7 +260,7 @@ WHERE users.username = $1
 type GetOrdersByUserNameRow struct {
 	Oid        int64
 	Status     string
-	Accrual    pgtype.Int4
+	Accrual    pgtype.Float4
 	UploadedAt pgtype.Timestamptz
 }
 
@@ -232,6 +371,33 @@ func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const insertBonusTransaction = `-- name: InsertBonusTransaction :exec
+INSERT INTO bonus_transactions (bonus_id, oid, bonuses_withdraw, processed_at)
+SELECT ba.id, $2, $3, $4
+FROM users u
+JOIN bonus_accounts ba ON ba.user_id = u.id
+WHERE u.username = $1
+LIMIT 1
+`
+
+type InsertBonusTransactionParams struct {
+	Username        string
+	Oid             int64
+	BonusesWithdraw float32
+	ProcessedAt     pgtype.Timestamptz
+}
+
+// Bonus Transactions --
+func (q *Queries) InsertBonusTransaction(ctx context.Context, arg InsertBonusTransactionParams) error {
+	_, err := q.db.Exec(ctx, insertBonusTransaction,
+		arg.Username,
+		arg.Oid,
+		arg.BonusesWithdraw,
+		arg.ProcessedAt,
+	)
+	return err
+}
+
 const insertRefreshToken = `-- name: InsertRefreshToken :exec
 INSERT INTO user_tokens (user_id, token_id, is_valid)
 VALUES (
@@ -271,6 +437,39 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) error {
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
+	return err
+}
+
+const updateBalance = `-- name: UpdateBalance :exec
+UPDATE bonus_accounts SET current_balance = $1, total_bonuses_spent = $2
+WHERE user_id = (SELECT id FROM users WHERE username = $3 LIMIT 1)
+`
+
+type UpdateBalanceParams struct {
+	CurrentBalance    float32
+	TotalBonusesSpent float32
+	Username          string
+}
+
+func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) error {
+	_, err := q.db.Exec(ctx, updateBalance, arg.CurrentBalance, arg.TotalBonusesSpent, arg.Username)
+	return err
+}
+
+const updateOrderStatus = `-- name: UpdateOrderStatus :exec
+UPDATE orders
+SET  status = $1, accrual = $2
+WHERE oid = $3
+`
+
+type UpdateOrderStatusParams struct {
+	Status  string
+	Accrual pgtype.Float4
+	Oid     int64
+}
+
+func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) error {
+	_, err := q.db.Exec(ctx, updateOrderStatus, arg.Status, arg.Accrual, arg.Oid)
 	return err
 }
 

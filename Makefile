@@ -39,17 +39,18 @@ goose-up:
 ####################################################################################################
 
 ## >>> API Test <<<
+RTOKEN ?=
+TOKEN ?=
+
 register:
 	curl -v -X POST -d '{"login":"gromartem", "password":"qwerty123"}' http://localhost:${SERVER_PORT}/api/user/register | jq "."
 
 login:
 	curl -v -X POST -d '{"login":"gromartem", "password":"qwerty123"}' http://localhost:${SERVER_PORT}/api/user/login | jq "."
 
-TOKEN ?=
 logout:
 	curl -v -X POST -H 'Authorization: Bearer ${TOKEN}' http://localhost:${SERVER_PORT}/api/user/logout
 
-RTOKEN ?=
 refresh:
 	curl -v -X POST -H 'Authorization: Bearer ${TOKEN}' -d '{"refresh_token":"${RTOKEN}"}' http://localhost:${SERVER_PORT}/api/user/refresh
 
@@ -61,13 +62,17 @@ get-order:
 	curl -v -X GET -H 'Authorization: Bearer ${TOKEN}' http://localhost:${SERVER_PORT}/api/user/orders | jq "."
 
 get-balance:
-	curl -v -X GET http://localhost:${SERVER_PORT}/api/user/balance
+	curl -v -X GET -H 'Authorization: Bearer ${TOKEN}' http://localhost:${SERVER_PORT}/api/user/balance | jq "."
 
 withdraw:
-	curl -v -X GET http://localhost:${SERVER_PORT}/api/user/balance/withdraw
+	curl -v -X POST -H 'Authorization: Bearer ${TOKEN}' -d '{"order": "12345678903","sum": 80}' http://localhost:${SERVER_PORT}/api/user/balance/withdraw
 
 history:
-	curl -v -X GET http://localhost:${SERVER_PORT}/api/user/withdrawals
+	curl -v -X GET -H 'Authorization: Bearer ${TOKEN}' http://localhost:${SERVER_PORT}/api/user/withdrawals | jq "."
+
+create-accural-order:
+	# curl -v -X POST -H "Content-Type: application/json" -d '{"order":"927923470", "goods":[{"descripiton":"BMW 3","price":4788399.99}]}' http://localhost:8080/api/orders
+	curl -v -X POST -H "Content-Type: application/json" -d '{"order":"12345678903", "goods":[{"descripiton":"BMW 3","price":4788399.99}]}' http://localhost:8080/api/orders
 
 ####################################################################################################
 
@@ -88,11 +93,11 @@ select-all-user-tokens:
 	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "SELECT * from user_tokens ORDER BY id;"
 
 delete-all:
-	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE users RESTART IDENTITY;"
-	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE orders RESTART IDENTITY;"
-	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE bonus_accounts RESTART IDENTITY;"
-	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE bonus_transactions RESTART IDENTITY;"
-	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE user_tokens RESTART IDENTITY;"
+	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE users RESTART IDENTITY CASCADE;"
+	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE orders RESTART IDENTITY CASCADE;"
+	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE bonus_accounts RESTART IDENTITY CASCADE;"
+	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE bonus_transactions RESTART IDENTITY CASCADE;"
+	PGPASSWORD=${DB_PASSWORD} psql -h localhost -U ${DB_USER} -c "TRUNCATE TABLE user_tokens RESTART IDENTITY CASCADE;"
 
 ####################################################################################################
 
@@ -111,7 +116,7 @@ pg-down:
 static-test:
 	go vet -vettool=./statictest ./...
 
-autotests: build static-test
+autotests: delete-all build static-test
 	./gophermarttest \
 	    -test.v -test.run=^TestGophermart$ \
 		-gophermart-binary-path=cmd/gophermart/gomart \

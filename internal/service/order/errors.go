@@ -2,33 +2,6 @@ package order
 
 import "fmt"
 
-type ErrWrongLuna struct {
-	err error
-}
-
-func (ewl *ErrWrongLuna) Error() string {
-	return ewl.err.Error()
-}
-
-func (ewl *ErrWrongLuna) Unwrap() error {
-	return ewl.err
-}
-
-func (ewl *ErrWrongLuna) Is(target error) bool {
-	_, ok := target.(*ErrWrongLuna)
-	return ok
-}
-
-func NewErrWrongLuna(err error) *ErrWrongLuna {
-	if err == nil {
-		err = fmt.Errorf("wrong number, luna algorithm failed")
-	}
-
-	return &ErrWrongLuna{
-		err: fmt.Errorf("%w", err),
-	}
-}
-
 type ErrBadOrderID struct {
 	err error
 }

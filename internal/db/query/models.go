@@ -11,15 +11,15 @@ import (
 type BonusAccount struct {
 	ID                int32
 	UserID            int32
-	CurrentBalance    int32
-	TotalBonusesSpent int32
+	CurrentBalance    float32
+	TotalBonusesSpent float32
 }
 
 type BonusTransaction struct {
 	ID              int32
 	BonusID         int32
-	OrderID         int32
-	BonusesWithdraw int32
+	Oid             int64
+	BonusesWithdraw float32
 	ProcessedAt     pgtype.Timestamptz
 }
 
@@ -28,7 +28,7 @@ type Order struct {
 	UserID     int32
 	Oid        int64
 	Status     string
-	Accrual    pgtype.Int4
+	Accrual    pgtype.Float4
 	UploadedAt pgtype.Timestamptz
 	UpdatedAt  pgtype.Timestamptz
 }
