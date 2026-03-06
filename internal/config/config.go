@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	HostAddr    string `json:"hostAddr" yaml:"hostAddr" env:"RUN_ADDRESS" default:"localhost:8080"`
+	AccrualHost string `json:"accrualHost" yaml:"accrualHost" env:"ACCRUAL_SYSTEM_ADDRESS" default:"localhost:8081"`
 	DatabaseDSN string `json:"dbDSN" yaml:"dbDSN" env:"DATABASE_URI"`
 	Key         string `json:"key" env:"KEY"`
 }
@@ -22,6 +23,9 @@ func (c *Config) ParseConfig() error {
 
 	flag.Func("a", "pass ip:port to run server", func(flagArgs string) error {
 		return parseAddr(flagArgs, &c.HostAddr)
+	})
+	flag.Func("r", "pass ip:port for accrual server", func(flagArgs string) error {
+		return parseAddr(flagArgs, &c.AccrualHost)
 	})
 	flag.StringVar(
 		&c.DatabaseDSN,

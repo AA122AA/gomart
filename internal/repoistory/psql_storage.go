@@ -2,6 +2,8 @@ package repoistory
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/AA122AA/gomart.git/internal/db"
@@ -41,6 +43,16 @@ func (ur *UserRepo) Create(ctx context.Context, username, passwordHash string) e
 	}
 
 	return ur.queries.InsertUser(ctx, params)
+}
+
+func (ur *UserRepo) CreateBonusAcc(ctx context.Context, username string, balance, spent float32) error {
+	params := query.CreateBonusAccountParams{
+		Username:          username,
+		CurrentBalance:    balance,
+		TotalBonusesSpent: spent,
+	}
+
+	return ur.queries.CreateBonusAccount(ctx, params)
 }
 
 func (ur *UserRepo) GetPasswordHash(ctx context.Context, username string) (string, error) {
@@ -101,7 +113,7 @@ func NewOrderRepo(ctx context.Context, queries *query.Queries, db *db.DB) *Order
 	return &OrderRepo{
 		db:      db,
 		queries: queries,
-		lg:      zctx.From(ctx).Named("user repo"),
+		lg:      zctx.From(ctx).Named("order repo"),
 	}
 }
 
@@ -131,4 +143,159 @@ func (or *OrderRepo) GetAll(ctx context.Context) ([]query.GetAllRow, error) {
 
 func (or *OrderRepo) GetByUser(ctx context.Context, username string) ([]query.GetOrdersByUserNameRow, error) {
 	return or.queries.GetOrdersByUserName(ctx, username)
+}
+
+func (or *OrderRepo) UpdateOrderStatus(ctx context.Context, accruals map[string]*domain.AccrualResponseJSON) error {
+	fmt.Printf("in UpdaateOrderStatus\n")
+	tx, err := or.db.BeginTX(ctx)
+	if err != nil {
+		or.lg.Error("cannot begin TX", zap.Error(err))
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	q := or.queries.WithTx(tx)
+	for _, v := range accruals {
+		noid, err := strconv.Atoi(v.Order)
+		if err != nil {
+			return err
+		}
+		params := query.UpdateOrderStatusParams{
+			Status: v.Status,
+			Accrual: pgtype.Float4{
+				Float32: v.Accrual,
+				Valid:   true,
+			},
+			Oid: int64(noid),
+		}
+
+		err = q.UpdateOrderStatus(ctx, params)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("updated order - %v\n", v.Order)
+
+	}
+
+	fmt.Printf("done updating, gonna commit\n")
+
+	return tx.Commit(ctx)
+}
+
+// --- Balance Repository --- \\
+type BalanceRepo struct {
+	db      *db.DB
+	queries *query.Queries
+	lg      *zap.Logger
+}
+
+func NewBalanceRepo(ctx context.Context, queries *query.Queries, db *db.DB) *BalanceRepo {
+	return &BalanceRepo{
+		db:      db,
+		queries: queries,
+		lg:      zctx.From(ctx).Named("balance repo"),
+	}
+}
+
+func (br *BalanceRepo) GetByUser(ctx context.Context, username string) (query.GetBalanceByUserNameRow, error) {
+	return br.queries.GetBalanceByUserName(ctx, username)
+}
+
+func (br *BalanceRepo) UpdateBonusBalance(ctx context.Context, username string, balance, spent float32) error {
+	params := query.UpdateBalanceParams{
+		CurrentBalance:    balance,
+		TotalBonusesSpent: spent,
+		Username:          username,
+	}
+
+	return br.queries.UpdateBalance(ctx, params)
+}
+
+func (br *BalanceRepo) WriteBonusHistory(ctx context.Context, username string, oid int, amount float32) error {
+	now := pgtype.Timestamptz{
+		Time:  time.Now(),
+		Valid: true,
+	}
+	params := query.InsertBonusTransactionParams{
+		Username:        username,
+		Oid:             int64(oid),
+		BonusesWithdraw: amount,
+		ProcessedAt:     now,
+	}
+
+	return br.queries.InsertBonusTransaction(ctx, params)
+}
+
+func (br *BalanceRepo) GetBonusTransactions(ctx context.Context, username string) ([]query.GetBonusTransactionsByUserNameRow, error) {
+	return br.queries.GetBonusTransactionsByUserName(ctx, username)
+}
+
+// --- Accrual Repository --- \\
+type AccrualRepo struct {
+	db      *db.DB
+	queries *query.Queries
+	lg      *zap.Logger
+}
+
+func NewAccrualRepo(ctx context.Context, queries *query.Queries, db *db.DB) *AccrualRepo {
+	return &AccrualRepo{
+		db:      db,
+		queries: queries,
+		lg:      zctx.From(ctx).Named("accrual repo"),
+	}
+}
+
+func (ar *AccrualRepo) GetAll(ctx context.Context) ([]query.GetAllOrdersForAccrualRow, error) {
+	return ar.queries.GetAllOrdersForAccrual(ctx)
+}
+
+func (ar *AccrualRepo) UpdateAccruals(ctx context.Context, accruals map[string]*domain.AccrualResponseJSON) error {
+	tx, err := ar.db.BeginTX(ctx)
+	if err != nil {
+		ar.lg.Error("cannot begin TX", zap.Error(err))
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	q := ar.queries.WithTx(tx)
+	for _, v := range accruals {
+		noid, err := strconv.Atoi(v.Order)
+		if err != nil {
+			return err
+		}
+		params := query.UpdateOrderStatusParams{
+			Status: v.Status,
+			Accrual: pgtype.Float4{
+				Float32: v.Accrual,
+				Valid:   true,
+			},
+			Oid: int64(noid),
+		}
+
+		err = q.UpdateOrderStatus(ctx, params)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("updated order - %v\n", v.Order)
+
+		res, err := q.GetBalanceByOrderID(ctx, int64(noid))
+		if err != nil {
+			return err
+		}
+
+		bParams := query.UpdateBalanceParams{
+			CurrentBalance:    res.CurrentBalance + v.Accrual,
+			TotalBonusesSpent: res.TotalBonusesSpent,
+			Username:          res.Username,
+		}
+
+		err = q.UpdateBalance(ctx, bParams)
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Printf("done updating, gonna commit\n")
+
+	return tx.Commit(ctx)
 }

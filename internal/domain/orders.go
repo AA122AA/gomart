@@ -10,7 +10,7 @@ import (
 type OrderJSON struct {
 	Number     string    `json:"number"`
 	Status     string    `json:"status"`
-	Accrual    int       `json:"accrual"`
+	Accrual    float32   `json:"accrual"`
 	UploadedAt time.Time `json:"uploaded_at"`
 }
 
@@ -18,7 +18,7 @@ func TransformOrderToJSON(in query.GetOrdersByUserNameRow) *OrderJSON {
 	return &OrderJSON{
 		Number:     fmt.Sprintf("%v", in.Oid),
 		Status:     in.Status,
-		Accrual:    int(in.Accrual.Int32),
+		Accrual:    in.Accrual.Float32,
 		UploadedAt: in.UploadedAt.Time,
 	}
 }

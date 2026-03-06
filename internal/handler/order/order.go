@@ -12,6 +12,7 @@ import (
 	"github.com/AA122AA/gomart.git/internal/db/query"
 	"github.com/AA122AA/gomart.git/internal/domain"
 	"github.com/AA122AA/gomart.git/internal/service/order"
+	"github.com/AA122AA/gomart.git/internal/service/utils"
 	"github.com/go-faster/sdk/zctx"
 	"go.uber.org/zap"
 )
@@ -94,7 +95,7 @@ func (oh *orderHandler) Create(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode([]byte("you have already uploaded this order"))
 			return
-		case errors.Is(err, order.NewErrWrongLuna(nil)):
+		case errors.Is(err, utils.NewErrWrongLuna(nil)):
 			http.Error(w, "you have already uploaded this order", http.StatusUnprocessableEntity)
 			return
 		default:

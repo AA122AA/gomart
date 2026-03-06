@@ -21,6 +21,7 @@ import (
 
 type UserRepo interface {
 	Create(ctx context.Context, username, passwordHash string) error
+	CreateBonusAcc(ctx context.Context, username string, balance, spent float32) error
 	GetPasswordHash(ctx context.Context, username string) (string, error)
 	GetRefreshTokenByUserName(ctx context.Context, username string) (*domain.GetRefreshTokenID, error)
 	CreateRefreshToken(ctx context.Context, tokenID, username string, isvalid bool) error
@@ -59,6 +60,11 @@ func (as *UserService) Register(ctx context.Context, login, password string) err
 				return NewErrUserExists(err)
 			}
 		}
+		return err
+	}
+
+	err = as.repo.CreateBonusAcc(ctx, login, 0, 0)
+	if err != nil {
 		return err
 	}
 

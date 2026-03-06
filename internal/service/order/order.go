@@ -9,6 +9,7 @@ import (
 	"github.com/AA122AA/gomart.git/internal/constants"
 	"github.com/AA122AA/gomart.git/internal/db/query"
 	"github.com/AA122AA/gomart.git/internal/domain"
+	"github.com/AA122AA/gomart.git/internal/service/utils"
 	"github.com/go-faster/sdk/zctx"
 	"go.uber.org/zap"
 )
@@ -65,7 +66,7 @@ func (osrv *OrderService) Create(ctx context.Context, OID, username string) erro
 	}
 
 	if strings.Contains(err.Error(), "no rows in result set") {
-		err = isLuna(OID)
+		err = utils.IsLuna(OID)
 		if err != nil {
 			return err
 		}
@@ -79,44 +80,4 @@ func (osrv *OrderService) Create(ctx context.Context, OID, username string) erro
 	}
 
 	return err
-}
-
-func isLuna(oid string) error {
-	nums := make([]int, 0, len(oid))
-	for _, l := range strings.Split(oid, "") {
-		i, err := strconv.Atoi(l)
-		if err != nil {
-			return NewErrBadOrderID(err)
-		}
-
-		nums = append(nums, i)
-	}
-
-	acc1 := 0
-	var divider int
-
-	switch len(nums) % 2 {
-	case 0:
-		divider = 0
-	case 1:
-		divider = 1
-	}
-
-	for i, n := range nums {
-		if i%2 == divider {
-			if n*2/10 == 1 {
-				acc1 += n*2 - 9
-			} else {
-				acc1 += n * 2
-			}
-		} else {
-			acc1 += n
-		}
-	}
-
-	if acc1%10 == 0 {
-		return nil
-	} else {
-		return NewErrWrongLuna(nil)
-	}
 }
