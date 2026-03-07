@@ -13,7 +13,7 @@ import (
 	authhandler "github.com/AA122AA/gomart.git/internal/handler/auth"
 	balancehandler "github.com/AA122AA/gomart.git/internal/handler/balance"
 	"github.com/AA122AA/gomart.git/internal/handler/order"
-	"github.com/AA122AA/gomart.git/internal/repoistory"
+	"github.com/AA122AA/gomart.git/internal/repository"
 	"github.com/AA122AA/gomart.git/internal/server"
 	"github.com/AA122AA/gomart.git/internal/service/accrual"
 	authservice "github.com/AA122AA/gomart.git/internal/service/auth"
@@ -63,10 +63,10 @@ func main() {
 
 	// Init repo
 	queries := query.New(database.DB())
-	authRepo := repoistory.NewUserRepo(ctx, queries, database)
-	orderRepo := repoistory.NewOrderRepo(ctx, queries, database)
-	balanceRepo := repoistory.NewBalanceRepo(ctx, queries, database)
-	accrualRepo := repoistory.NewAccrualRepo(ctx, queries, database)
+	authRepo := repository.NewUserRepo(ctx, queries, database)
+	orderRepo := repository.NewOrderRepo(ctx, queries, database)
+	balanceRepo := repository.NewBalanceRepo(ctx, queries, database)
+	accrualRepo := repository.NewAccrualRepo(ctx, queries, database)
 
 	var wg sync.WaitGroup
 

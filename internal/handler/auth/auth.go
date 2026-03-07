@@ -34,22 +34,23 @@ func NewAuthHandler(ctx context.Context, auth UserService) *authHandler {
 
 func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	user := domain.LogPassJSON{}
+	var user domain.LogPassJSON
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, "Что-то пошло не так", http.StatusInternalServerError)
 		ah.lg.Error("cannot decode user json", zap.Error(err))
+		http.Error(w, "Что-то пошло не так", http.StatusInternalServerError)
 		return
 	}
 
 	err = ah.auth.Register(r.Context(), user.Login, user.Password)
 	if err != nil {
 		var uerr *authservice.ErrUserExists
-		if errors.Is(err, uerr) {
+		if errors.As(err, &uerr) {
 			ah.lg.Error("user already exists", zap.String("user", user.Login), zap.Error(err))
 			http.Error(w, "User already exists", http.StatusConflict)
 			return
 		}
+
 		ah.lg.Error("cannot register user", zap.String("user", user.Login), zap.Error(err))
 		http.Error(w, "Что-то пошло не так", http.StatusInternalServerError)
 		return
@@ -66,7 +67,9 @@ func (ah *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(res)
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		ah.lg.Error("failed to encode response", zap.Error(err))
+	}
 }
 
 func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +93,9 @@ func (ah *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(res)
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		ah.lg.Error("failed to encode response", zap.Error(err))
+	}
 }
 
 func (ah *authHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -136,5 +141,7 @@ func (ah *authHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		ah.lg.Error("failed to encode response", zap.Error(err))
+	}
 }

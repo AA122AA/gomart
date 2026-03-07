@@ -11,7 +11,7 @@ import (
 	"github.com/AA122AA/gomart.git/internal/config"
 	"github.com/AA122AA/gomart.git/internal/db"
 	"github.com/AA122AA/gomart.git/internal/db/query"
-	"github.com/AA122AA/gomart.git/internal/repoistory"
+	"github.com/AA122AA/gomart.git/internal/repository"
 )
 
 func TestUpdateOrders(t *testing.T) {
@@ -29,7 +29,7 @@ func TestUpdateOrders(t *testing.T) {
 	database := db.New(ctx, DatabaseDSN)
 	queries := query.New(database.DB())
 
-	repo := repoistory.NewAccrualRepo(ctx, queries, database)
+	repo := repository.NewAccrualRepo(ctx, queries, database)
 	ac := NewAccrualClient(ctx, repo, cfg)
 
 	orderCh := ac.getOrders(ctx, &wg)

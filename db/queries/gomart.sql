@@ -14,7 +14,6 @@ WHERE username = $1 LIMIT 1;
 INSERT INTO users (username, password_hash, created_at, updated_at)
 VALUES ($1, $2, $3, $4);
 
-
 -- TOKEN --
 -- name: GetRefreshTokenByUserName :one
 SELECT user_tokens.token_id, user_tokens.is_valid

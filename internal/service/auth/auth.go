@@ -14,14 +14,15 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRepo interface {
-	Create(ctx context.Context, username, passwordHash string) error
-	CreateBonusAcc(ctx context.Context, username string, balance, spent float32) error
+	CreateUserAndBonusAcc(ctx context.Context, username, passwordHash string, balance, spent float32) error
+	// CreateBonusAcc(ctx context.Context, username string, balance, spent float32) error
 	GetPasswordHash(ctx context.Context, username string) (string, error)
 	GetRefreshTokenByUserName(ctx context.Context, username string) (*domain.GetRefreshTokenID, error)
 	CreateRefreshToken(ctx context.Context, tokenID, username string, isvalid bool) error
@@ -45,26 +46,21 @@ func NewUserService(ctx context.Context, repo UserRepo, cfg *config.Config) *Use
 }
 
 func (as *UserService) Register(ctx context.Context, login, password string) error {
+	if login == "" || password == "" {
+		return ErrInvalidLoginPassword
+	}
+
 	hPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot generate hash from password: %w", err)
 	}
 
-	err = as.repo.Create(ctx, login, string(hPass))
+	err = as.repo.CreateUserAndBonusAcc(ctx, login, string(hPass), float32(0.0), float32(0.0))
 	if err != nil {
-		as.lg.Debug("cannot create", zap.Error(err))
 		var perr *pgconn.PgError
-		if errors.As(err, &perr) {
-			as.lg.Debug("inside As", zap.String("errcode", perr.Code), zap.Error(perr))
-			if perr.Code == pgerrcode.UniqueViolation {
-				return NewErrUserExists(err)
-			}
+		if errors.As(err, &perr) && perr.Code == pgerrcode.UniqueViolation {
+			return NewErrUserExists(err)
 		}
-		return err
-	}
-
-	err = as.repo.CreateBonusAcc(ctx, login, 0, 0)
-	if err != nil {
 		return err
 	}
 
@@ -72,14 +68,23 @@ func (as *UserService) Register(ctx context.Context, login, password string) err
 }
 
 func (as *UserService) Login(ctx context.Context, login, password string) (*domain.AccessRefreshJSON, error) {
+	if login == "" || password == "" {
+		return nil, ErrInvalidLoginPassword
+	}
+
 	hPass, err := as.repo.GetPasswordHash(ctx, login)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			as.lg.Error("login for not existing user", zap.String("login", login))
+			return nil, ErrInvalidCredentials
+		}
 		return nil, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(hPass), []byte(password))
 	if err != nil {
-		return nil, err
+		as.lg.Error("invalid password", zap.String("login", login))
+		return nil, ErrInvalidCredentials
 	}
 
 	return as.createTokens(ctx, login)

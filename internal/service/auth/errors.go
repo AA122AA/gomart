@@ -6,6 +6,8 @@ import (
 )
 
 var ErrInvalidToken = errors.New("invalid token")
+var ErrInvalidLoginPassword = errors.New("login and password must no be empty")
+var ErrInvalidCredentials = errors.New("invalid credentials")
 
 type ErrUserExists struct {
 	err error
