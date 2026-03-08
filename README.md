@@ -10,6 +10,7 @@
 
 # TODO:
 - [ ] gzip middleware
+- [ ] перенести таймеры в accrual client в конфиг
 - [ ] tests
 - [ ] docs
 

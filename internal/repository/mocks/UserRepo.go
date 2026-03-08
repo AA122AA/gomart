@@ -316,12 +316,12 @@ func (_c *MockUserRepo_GetRefreshTokenByUserName_Call) RunAndReturn(run func(ctx
 	return _c
 }
 
-// InvalidedRefreshToken provides a mock function for the type MockUserRepo
-func (_mock *MockUserRepo) InvalidedRefreshToken(ctx context.Context, username string) error {
+// InvalidateRefreshToken provides a mock function for the type MockUserRepo
+func (_mock *MockUserRepo) InvalidateRefreshToken(ctx context.Context, username string) error {
 	ret := _mock.Called(ctx, username)
 
 	if len(ret) == 0 {
-		panic("no return value specified for InvalidedRefreshToken")
+		panic("no return value specified for InvalidateRefreshToken")
 	}
 
 	var r0 error
@@ -333,19 +333,19 @@ func (_mock *MockUserRepo) InvalidedRefreshToken(ctx context.Context, username s
 	return r0
 }
 
-// MockUserRepo_InvalidedRefreshToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InvalidedRefreshToken'
-type MockUserRepo_InvalidedRefreshToken_Call struct {
+// MockUserRepo_InvalidateRefreshToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InvalidateRefreshToken'
+type MockUserRepo_InvalidateRefreshToken_Call struct {
 	*mock.Call
 }
 
-// InvalidedRefreshToken is a helper method to define mock.On call
+// InvalidateRefreshToken is a helper method to define mock.On call
 //   - ctx context.Context
 //   - username string
-func (_e *MockUserRepo_Expecter) InvalidedRefreshToken(ctx interface{}, username interface{}) *MockUserRepo_InvalidedRefreshToken_Call {
-	return &MockUserRepo_InvalidedRefreshToken_Call{Call: _e.mock.On("InvalidedRefreshToken", ctx, username)}
+func (_e *MockUserRepo_Expecter) InvalidateRefreshToken(ctx interface{}, username interface{}) *MockUserRepo_InvalidateRefreshToken_Call {
+	return &MockUserRepo_InvalidateRefreshToken_Call{Call: _e.mock.On("InvalidateRefreshToken", ctx, username)}
 }
 
-func (_c *MockUserRepo_InvalidedRefreshToken_Call) Run(run func(ctx context.Context, username string)) *MockUserRepo_InvalidedRefreshToken_Call {
+func (_c *MockUserRepo_InvalidateRefreshToken_Call) Run(run func(ctx context.Context, username string)) *MockUserRepo_InvalidateRefreshToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -363,12 +363,12 @@ func (_c *MockUserRepo_InvalidedRefreshToken_Call) Run(run func(ctx context.Cont
 	return _c
 }
 
-func (_c *MockUserRepo_InvalidedRefreshToken_Call) Return(err error) *MockUserRepo_InvalidedRefreshToken_Call {
+func (_c *MockUserRepo_InvalidateRefreshToken_Call) Return(err error) *MockUserRepo_InvalidateRefreshToken_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockUserRepo_InvalidedRefreshToken_Call) RunAndReturn(run func(ctx context.Context, username string) error) *MockUserRepo_InvalidedRefreshToken_Call {
+func (_c *MockUserRepo_InvalidateRefreshToken_Call) RunAndReturn(run func(ctx context.Context, username string) error) *MockUserRepo_InvalidateRefreshToken_Call {
 	_c.Call.Return(run)
 	return _c
 }

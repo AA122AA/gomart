@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/AA122AA/gomart.git/internal/config"
@@ -22,12 +21,11 @@ import (
 
 type UserRepo interface {
 	CreateUserAndBonusAcc(ctx context.Context, username, passwordHash string, balance, spent float32) error
-	// CreateBonusAcc(ctx context.Context, username string, balance, spent float32) error
 	GetPasswordHash(ctx context.Context, username string) (string, error)
 	GetRefreshTokenByUserName(ctx context.Context, username string) (*domain.GetRefreshTokenID, error)
 	CreateRefreshToken(ctx context.Context, tokenID, username string, isvalid bool) error
 	UpdateRefreshToken(ctx context.Context, tokenID, username string, isvalid bool) error
-	InvalidedRefreshToken(ctx context.Context, username string) error
+	InvalidateRefreshToken(ctx context.Context, username string) error
 }
 
 type UserService struct {
@@ -96,7 +94,7 @@ func (as *UserService) Logout(ctx context.Context, accessToken string) error {
 		return fmt.Errorf("cannot verify access token: %w", err)
 	}
 
-	err = as.repo.InvalidedRefreshToken(ctx, userName)
+	err = as.repo.InvalidateRefreshToken(ctx, userName)
 	if err != nil {
 		return fmt.Errorf("cannot delete refresh token: %w", err)
 	}
@@ -184,7 +182,8 @@ func (as *UserService) createRefreshToken(ctx context.Context, login string) (st
 		return refreshToken, nil
 	}
 
-	if strings.Contains(err.Error(), "no rows in result set") {
+	// if strings.Contains(err.Error(), "no rows in result set") {
+	if errors.Is(err, pgx.ErrNoRows) {
 		err = as.repo.CreateRefreshToken(ctx, tokenID, login, true)
 		if err != nil {
 			return "", err
@@ -225,7 +224,10 @@ func (as *UserService) verifyToken(rawToken string) (string, error) {
 		return "", ErrInvalidToken
 	}
 
-	userName, _ := claims["user_name"].(string)
+	userName, ok := claims["user_name"].(string)
+	if !ok {
+		return "", ErrInvalidToken
+	}
 
 	return userName, nil
 }

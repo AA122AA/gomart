@@ -119,7 +119,7 @@ func (ur *UserRepo) UpdateRefreshToken(ctx context.Context, tokenID, username st
 	return ur.queries.UpdateRefreshToken(ctx, params)
 }
 
-func (ur *UserRepo) InvalidedRefreshToken(ctx context.Context, username string) error {
+func (ur *UserRepo) InvalidateRefreshToken(ctx context.Context, username string) error {
 	params := query.UpdateRefreshTokenIsValidParams{
 		Username: username,
 		IsValid:  false,
