@@ -36,7 +36,7 @@ func (bs *BalanceService) Get(ctx context.Context, username string) (*domain.Bal
 		return nil, err
 	}
 
-	return domain.TransformBalanceToJSON(balance), err
+	return domain.TransformBalanceToJSON(balance), nil
 }
 
 func (bs *BalanceService) Withdraw(ctx context.Context, username, oid string, amount float32) error {

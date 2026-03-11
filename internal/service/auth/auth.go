@@ -91,7 +91,8 @@ func (as *UserService) Login(ctx context.Context, login, password string) (*doma
 func (as *UserService) Logout(ctx context.Context, accessToken string) error {
 	userName, err := as.verifyToken(accessToken)
 	if err != nil {
-		return fmt.Errorf("cannot verify access token: %w", err)
+		as.lg.Error("invalid token", zap.Error(err))
+		return ErrInvalidToken
 	}
 
 	err = as.repo.InvalidateRefreshToken(ctx, userName)
@@ -105,7 +106,8 @@ func (as *UserService) Logout(ctx context.Context, accessToken string) error {
 func (as *UserService) Refresh(ctx context.Context, token string) (*domain.AccessRefreshJSON, error) {
 	user, err := as.verifyRefreshToken(ctx, token)
 	if err != nil {
-		return nil, err
+		as.lg.Error("invalid refresh token", zap.Error(err))
+		return nil, ErrInvalidToken
 	}
 
 	return as.createTokens(ctx, user)
@@ -123,11 +125,13 @@ func (as *UserService) VerifyAccessToken(ctx context.Context, rawToken string) e
 func (as *UserService) createTokens(ctx context.Context, login string) (*domain.AccessRefreshJSON, error) {
 	accessToken, err := as.createAccessToken(login)
 	if err != nil {
+		as.lg.Error("cannot create access token", zap.Error(err))
 		return nil, err
 	}
 
 	refreshToken, err := as.createRefreshToken(ctx, login)
 	if err != nil {
+		as.lg.Error("cannot create refresh token", zap.Error(err))
 		return nil, err
 	}
 
@@ -176,17 +180,16 @@ func (as *UserService) createRefreshToken(ctx context.Context, login string) (st
 	if err == nil {
 		err = as.repo.UpdateRefreshToken(ctx, tokenID, login, true)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed to update refresh token: %w", err)
 		}
 
 		return refreshToken, nil
 	}
 
-	// if strings.Contains(err.Error(), "no rows in result set") {
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = as.repo.CreateRefreshToken(ctx, tokenID, login, true)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed to create refresh token: %w", err)
 		}
 
 		return refreshToken, nil
@@ -215,10 +218,6 @@ func (as *UserService) verifyToken(rawToken string) (string, error) {
 		return "", fmt.Errorf("parse token failed: %w", err)
 	}
 
-	if !token.Valid {
-		return "", ErrInvalidToken
-	}
-
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return "", ErrInvalidToken
@@ -240,7 +239,6 @@ func (as *UserService) verifyRefreshToken(ctx context.Context, rawToken string) 
 
 	tokenInfo, err := as.repo.GetRefreshTokenByUserName(ctx, user)
 	if err != nil {
-		as.lg.Debug("no token for user", zap.String("user", user), zap.String("token", rawToken), zap.Error(err))
 		return "", err
 	}
 
