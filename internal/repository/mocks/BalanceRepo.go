@@ -172,81 +172,12 @@ func (_c *MockBalanceRepo_GetByUser_Call) RunAndReturn(run func(ctx context.Cont
 	return _c
 }
 
-// UpdateBonusBalance provides a mock function for the type MockBalanceRepo
-func (_mock *MockBalanceRepo) UpdateBonusBalance(ctx context.Context, usernname string, balance float32, spent float32) error {
-	ret := _mock.Called(ctx, usernname, balance, spent)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateBonusBalance")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, float32, float32) error); ok {
-		r0 = returnFunc(ctx, usernname, balance, spent)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockBalanceRepo_UpdateBonusBalance_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateBonusBalance'
-type MockBalanceRepo_UpdateBonusBalance_Call struct {
-	*mock.Call
-}
-
-// UpdateBonusBalance is a helper method to define mock.On call
-//   - ctx context.Context
-//   - usernname string
-//   - balance float32
-//   - spent float32
-func (_e *MockBalanceRepo_Expecter) UpdateBonusBalance(ctx interface{}, usernname interface{}, balance interface{}, spent interface{}) *MockBalanceRepo_UpdateBonusBalance_Call {
-	return &MockBalanceRepo_UpdateBonusBalance_Call{Call: _e.mock.On("UpdateBonusBalance", ctx, usernname, balance, spent)}
-}
-
-func (_c *MockBalanceRepo_UpdateBonusBalance_Call) Run(run func(ctx context.Context, usernname string, balance float32, spent float32)) *MockBalanceRepo_UpdateBonusBalance_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 float32
-		if args[2] != nil {
-			arg2 = args[2].(float32)
-		}
-		var arg3 float32
-		if args[3] != nil {
-			arg3 = args[3].(float32)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-			arg3,
-		)
-	})
-	return _c
-}
-
-func (_c *MockBalanceRepo_UpdateBonusBalance_Call) Return(err error) *MockBalanceRepo_UpdateBonusBalance_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockBalanceRepo_UpdateBonusBalance_Call) RunAndReturn(run func(ctx context.Context, usernname string, balance float32, spent float32) error) *MockBalanceRepo_UpdateBonusBalance_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// WriteBonusHistory provides a mock function for the type MockBalanceRepo
-func (_mock *MockBalanceRepo) WriteBonusHistory(ctx context.Context, username string, oid int, amount float32) error {
+// WithdrawTransaction provides a mock function for the type MockBalanceRepo
+func (_mock *MockBalanceRepo) WithdrawTransaction(ctx context.Context, username string, oid int, amount float32) error {
 	ret := _mock.Called(ctx, username, oid, amount)
 
 	if len(ret) == 0 {
-		panic("no return value specified for WriteBonusHistory")
+		panic("no return value specified for WithdrawTransaction")
 	}
 
 	var r0 error
@@ -258,21 +189,21 @@ func (_mock *MockBalanceRepo) WriteBonusHistory(ctx context.Context, username st
 	return r0
 }
 
-// MockBalanceRepo_WriteBonusHistory_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WriteBonusHistory'
-type MockBalanceRepo_WriteBonusHistory_Call struct {
+// MockBalanceRepo_WithdrawTransaction_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WithdrawTransaction'
+type MockBalanceRepo_WithdrawTransaction_Call struct {
 	*mock.Call
 }
 
-// WriteBonusHistory is a helper method to define mock.On call
+// WithdrawTransaction is a helper method to define mock.On call
 //   - ctx context.Context
 //   - username string
 //   - oid int
 //   - amount float32
-func (_e *MockBalanceRepo_Expecter) WriteBonusHistory(ctx interface{}, username interface{}, oid interface{}, amount interface{}) *MockBalanceRepo_WriteBonusHistory_Call {
-	return &MockBalanceRepo_WriteBonusHistory_Call{Call: _e.mock.On("WriteBonusHistory", ctx, username, oid, amount)}
+func (_e *MockBalanceRepo_Expecter) WithdrawTransaction(ctx interface{}, username interface{}, oid interface{}, amount interface{}) *MockBalanceRepo_WithdrawTransaction_Call {
+	return &MockBalanceRepo_WithdrawTransaction_Call{Call: _e.mock.On("WithdrawTransaction", ctx, username, oid, amount)}
 }
 
-func (_c *MockBalanceRepo_WriteBonusHistory_Call) Run(run func(ctx context.Context, username string, oid int, amount float32)) *MockBalanceRepo_WriteBonusHistory_Call {
+func (_c *MockBalanceRepo_WithdrawTransaction_Call) Run(run func(ctx context.Context, username string, oid int, amount float32)) *MockBalanceRepo_WithdrawTransaction_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -300,12 +231,12 @@ func (_c *MockBalanceRepo_WriteBonusHistory_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *MockBalanceRepo_WriteBonusHistory_Call) Return(err error) *MockBalanceRepo_WriteBonusHistory_Call {
+func (_c *MockBalanceRepo_WithdrawTransaction_Call) Return(err error) *MockBalanceRepo_WithdrawTransaction_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockBalanceRepo_WriteBonusHistory_Call) RunAndReturn(run func(ctx context.Context, username string, oid int, amount float32) error) *MockBalanceRepo_WriteBonusHistory_Call {
+func (_c *MockBalanceRepo_WithdrawTransaction_Call) RunAndReturn(run func(ctx context.Context, username string, oid int, amount float32) error) *MockBalanceRepo_WithdrawTransaction_Call {
 	_c.Call.Return(run)
 	return _c
 }

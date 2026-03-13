@@ -251,6 +251,53 @@ func (br *BalanceRepo) WriteBonusHistory(ctx context.Context, username string, o
 	return br.queries.InsertBonusTransaction(ctx, params)
 }
 
+func (br *BalanceRepo) WithdrawTransaction(ctx context.Context, username string, oid int, amount float32) error {
+	tx, err := br.db.BeginTX(ctx)
+	if err != nil {
+		br.lg.Error("cannot begin TX", zap.Error(err))
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	q := br.queries.WithTx(tx)
+	bal, err := q.GetBalanceByUserName(ctx, username)
+	if err != nil {
+		return err
+	}
+
+	if bal.CurrentBalance < amount {
+		return fmt.Errorf("balance less than amount. balance - %v, amount - %v", bal.CurrentBalance, amount)
+	}
+
+	uParams := query.UpdateBalanceParams{
+		CurrentBalance:    bal.CurrentBalance - amount,
+		TotalBonusesSpent: bal.TotalBonusesSpent + amount,
+		Username:          username,
+	}
+	err = q.UpdateBalance(ctx, uParams)
+	if err != nil {
+		return err
+	}
+
+	now := pgtype.Timestamptz{
+		Time:  time.Now(),
+		Valid: true,
+	}
+	ibParams := query.InsertBonusTransactionParams{
+		Username:        username,
+		Oid:             int64(oid),
+		BonusesWithdraw: amount,
+		ProcessedAt:     now,
+	}
+
+	err = q.InsertBonusTransaction(ctx, ibParams)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (br *BalanceRepo) GetBonusTransactions(ctx context.Context, username string) ([]query.GetBonusTransactionsByUserNameRow, error) {
 	return br.queries.GetBonusTransactionsByUserName(ctx, username)
 }
@@ -301,7 +348,6 @@ func (ar *AccrualRepo) UpdateAccruals(ctx context.Context, accruals map[string]*
 		if err != nil {
 			return err
 		}
-		fmt.Printf("updated order - %v\n", v.Order)
 
 		res, err := q.GetBalanceByOrderID(ctx, int64(noid))
 		if err != nil {
@@ -319,8 +365,6 @@ func (ar *AccrualRepo) UpdateAccruals(ctx context.Context, accruals map[string]*
 			return err
 		}
 	}
-
-	fmt.Printf("done updating, gonna commit\n")
 
 	return tx.Commit(ctx)
 }

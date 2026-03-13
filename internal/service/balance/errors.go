@@ -1,6 +1,12 @@
 package balance
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var ErrEmptyUsername = errors.New("empty username")
+var ErrEmptyInputData = errors.New("empty input data")
 
 type ErrNoMoney struct {
 	err error

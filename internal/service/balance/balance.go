@@ -13,8 +13,7 @@ import (
 
 type BalanceRepo interface {
 	GetByUser(ctx context.Context, username string) (query.GetBalanceByUserNameRow, error)
-	UpdateBonusBalance(ctx context.Context, usernname string, balance, spent float32) error
-	WriteBonusHistory(ctx context.Context, username string, oid int, amount float32) error
+	WithdrawTransaction(ctx context.Context, username string, oid int, amount float32) error
 	GetBonusTransactions(ctx context.Context, username string) ([]query.GetBonusTransactionsByUserNameRow, error)
 }
 
@@ -31,6 +30,10 @@ func NewBalanceService(ctx context.Context, repo BalanceRepo) *BalanceService {
 }
 
 func (bs *BalanceService) Get(ctx context.Context, username string) (*domain.BalanceJSON, error) {
+	if username == "" {
+		return nil, ErrEmptyUsername
+	}
+
 	balance, err := bs.repo.GetByUser(ctx, username)
 	if err != nil {
 		return nil, err
@@ -40,35 +43,23 @@ func (bs *BalanceService) Get(ctx context.Context, username string) (*domain.Bal
 }
 
 func (bs *BalanceService) Withdraw(ctx context.Context, username, oid string, amount float32) error {
+	if username == "" || oid == "" || amount <= 0 {
+		bs.lg.Error("empty data", zap.String("username", username), zap.String("oid", oid), zap.Float32("amount", amount))
+		return ErrEmptyInputData
+	}
+
 	err := utils.IsLuna(oid)
-	if err != nil {
-		return err
-	}
-
-	bal, err := bs.repo.GetByUser(ctx, username)
-	if err != nil {
-		return err
-	}
-
-	if bal.CurrentBalance < amount {
-		bs.lg.Error("no enought bonuses", zap.String("user", username), zap.Float32("want", amount), zap.Float32("have", bal.CurrentBalance))
-		return NewErrNoMoney(nil)
-	}
-
-	newBal := bal.CurrentBalance - amount
-	newSpent := bal.TotalBonusesSpent + amount
-
-	err = bs.repo.UpdateBonusBalance(ctx, username, newBal, newSpent)
 	if err != nil {
 		return err
 	}
 
 	noid, err := strconv.Atoi(oid)
 	if err != nil {
+		bs.lg.Error("can not parse oid", zap.String("oid", oid), zap.Error(err))
 		return err
 	}
 
-	err = bs.repo.WriteBonusHistory(ctx, username, noid, amount)
+	err = bs.repo.WithdrawTransaction(ctx, username, noid, amount)
 	if err != nil {
 		return err
 	}

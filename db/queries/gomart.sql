@@ -86,7 +86,8 @@ VALUES (
 SELECT current_balance, total_bonuses_spent
 FROM bonus_accounts
 JOIN users ON users.id = bonus_accounts.user_id
-WHERE users.username = $1;
+WHERE users.username = $1
+FOR UPDATE;
 
 -- name: UpdateBalance :exec
 UPDATE bonus_accounts SET current_balance = $1, total_bonuses_spent = $2
